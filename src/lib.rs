@@ -1,3 +1,6 @@
+mod plugins;
+pub use plugins::*;
+
 use font_kit::{
     error::SelectionError,
     family_name::FamilyName,
