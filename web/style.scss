@@ -1,0 +1,19 @@
+body {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.task-grid {
+    display: grid;
+    height: 100vh;
+    grid-template-columns: 1fr 4fr;
+}
+
+.side-bar {
+    background-color: aquamarine;
+}
+
+.main-content {
+    background-color: cornflowerblue;
+}
