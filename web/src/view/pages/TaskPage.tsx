@@ -1,5 +1,6 @@
 import styled from '@emotion/styled';
-import { useCallback, useState, VFC } from 'react';
+import { channel } from 'diagnostics_channel';
+import { ChangeEvent, useCallback, useEffect, useState, VFC } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { atom_channels } from '../../stores/tasks';
 
@@ -18,7 +19,14 @@ const MainContentWrapper = styled.div`
     margin: 10px;
     padding: 10px;
     background-color: aquamarine;
-    overflow: scroll;
+    display: grid;
+    grid-template-rows: 60px 1fr;
+
+    & > .task-view {
+        /* background-color: aquamarine; */
+        height: 100%;
+        overflow: scroll;
+    }
 `;
 
 const ChannelList = styled.div`
@@ -101,8 +109,35 @@ enum ModalContentType {
     EditTask,
 }
 
+interface TaskAddComponentProps {
+    list: String;
+}
+
+const TaskAddComponent: VFC<TaskAddComponentProps> = ({ list }) => {
+    const [inputTask, setInputTask] = useState({ name: '', list: list });
+
+    const onclick = () => {
+        alert(JSON.stringify(inputTask));
+    };
+    const setText = (e: ChangeEvent<HTMLInputElement>) => {
+        setInputTask({ ...inputTask, name: e.target.value });
+    };
+    return (
+        <div>
+            <div>Add Task</div>
+            <div>
+                <input type="text" placeholder="task name" onChange={setText} />
+            </div>
+            <div>
+                <input type="datetime-local" name="" id="" />
+            </div>
+            <button onClick={onclick}>Add</button>
+        </div>
+    );
+};
+
 const MainContent: VFC = () => {
-    const channels = useRecoilValue(atom_channels);
+    const [channels, setChannels] = useRecoilState(atom_channels);
     const tasks: Tasks = {
         lists: ['list1', 'list2', 'list3', 'list4', 'list5'],
         tasks: [
@@ -124,6 +159,12 @@ const MainContent: VFC = () => {
         setToggle(true);
     };
 
+    useEffect(() => {
+        if (!channels.select && channels.channels.length > 0) {
+            setChannels({ ...channels, select: channels.channels[0].name });
+        }
+    }, []);
+
     return (
         <MainContentWrapper>
             <div style={{ padding: '10px' }}># {channels.select}</div>
@@ -139,37 +180,44 @@ const MainContent: VFC = () => {
                         }}
                     >
                         modal content
-                        {modalContentType === ModalContentType.AddTask && <div>add task</div>}
+                        {modalContentType === ModalContentType.AddTask && <TaskAddComponent list="list" />}
                         {modalContentType === ModalContentType.EditTask && <div>edit task</div>}
                     </ModalContent>
                 </ModalWindow>
             )}
-            <ListWrapper>
-                {tasks.lists.map((list) => {
-                    return (
-                        <ListComponent>
-                            <div>{list}</div>
-                            <div>
-                                {tasks.tasks
-                                    .filter((task) => task.list == list)
-                                    .map((task) => {
-                                        return <div onClick={modalOpen}>{task.name}</div>;
-                                    })}
-                            </div>
-                            <AddTaskDiv onClick={modalTaskAddOpen}>
-                                <div>Task を追加</div>
-                                <div>+</div>
-                            </AddTaskDiv>
-                        </ListComponent>
-                    );
-                })}
-            </ListWrapper>
+            <div className="task-view">
+                <ListWrapper>
+                    {channels.channels
+                        .find((ch) => ch.name == channels.select)
+                        ?.lists.map((list) => {
+                            return (
+                                <ListComponent>
+                                    <div>
+                                        <b>{list}</b>
+                                    </div>
+                                    <div>
+                                        {tasks.tasks
+                                            .filter((task) => task.list == list)
+                                            .map((task) => {
+                                                return <div onClick={modalOpen}>{task.name}</div>;
+                                            })}
+                                    </div>
+                                    <AddTaskDiv onClick={modalTaskAddOpen}>
+                                        <div>Task を追加</div>
+                                        <div>+</div>
+                                    </AddTaskDiv>
+                                </ListComponent>
+                            );
+                        })}
+                </ListWrapper>
+            </div>
         </MainContentWrapper>
     );
 };
 
 const AddTaskDiv = styled.div`
     margin-top: 10px;
+    padding: 5px;
     border-top: 1px solid #151515;
     display: flex;
     justify-content: space-between;

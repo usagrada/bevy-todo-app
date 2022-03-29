@@ -1,3 +1,4 @@
+import { channel } from 'diagnostics_channel';
 import { atom } from 'recoil';
 
 interface Channels {
@@ -7,12 +8,16 @@ interface Channels {
 
 interface Channel {
     name: string;
+    lists: string[];
 }
 
 export const atom_channels = atom<Channels>({
     key: 'channels',
-    default: { channels: [
-        { name: 'general' },
-        { name: 'random' },
-    ], select: '' },
+    default: {
+        channels: [
+            { name: 'general', lists: ['list1', 'list2', 'list3', 'list4', 'list5'] },
+            { name: 'random', lists: ['TODO', 'DONE'] },
+        ],
+        select: '',
+    },
 });
