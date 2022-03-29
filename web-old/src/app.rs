@@ -1,4 +1,5 @@
 use yew::prelude::*;
+use bounce::BounceRoot;
 
 pub struct App {}
 
@@ -16,7 +17,10 @@ impl Component for App {
 
     fn view(&self, _ctx: &Context<Self>) -> Html {
         html! {
-            <Route />
+			<BounceRoot>
+				<Route />
+			</BounceRoot>
+            
         }
     }
 }

@@ -14,3 +14,4 @@ opt-level = "s"
 [dependencies]
 yew = "^0.19"
 yew-router = "^0.16"
+bounce = "*"

@@ -1,0 +1,26 @@
+{
+  "plugins": [
+    "prettier"
+  ],
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
+  "extends": [
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react/recommended",
+    "plugin:prettier/recommended"
+  ],
+  "rules": {
+    "no-console": 0,
+    "indent": "off",
+    
+    "@typescript-eslint/no-var-requires": 2,
+    "@typescript-eslint/indent": ["error", 2],
+    "react/jsx-indent-props": [1, "first"],
+    "react/jsx-filename-extension": [1, {
+      "extensions": [".ts", ".tsx", ".js", ".jsx"]
+    }]
+  }
+}

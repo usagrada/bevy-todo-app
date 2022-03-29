@@ -1,13 +1,13 @@
 {
   "package": {
-    "productName": "template",
+    "productName": "todo-app",
     "version": "0.1.0"
   },
   "build": {
-    "distDir": "../dist",
-    "devPath": "http://localhost:8080",
-    "beforeDevCommand": "trunk serve",
-    "beforeBuildCommand": "trunk build",
+    "distDir": "../build",
+    "devPath": "http://localhost:3000",
+    "beforeDevCommand": "yarn dev",
+    "beforeBuildCommand": "yarn build",
     "withGlobalTauri": false
   },
   "tauri": {
@@ -34,10 +34,10 @@
       },
       "macOS": {
         "frameworks": [],
-        "minimumSystemVersion": "",
         "useBootstrapper": false,
         "exceptionDomain": "",
         "signingIdentity": null,
+        "providerShortName": null,
         "entitlements": null
       },
       "windows": {
@@ -54,7 +54,7 @@
     },
     "windows": [
       {
-        "title": "Yew Tauri App",
+        "title": "todo-app",
         "width": 800,
         "height": 600,
         "resizable": true,
@@ -62,7 +62,7 @@
       }
     ],
     "security": {
-      "csp": "default-src blob: data: filesystem: ws: wss: http: https: tauri: 'unsafe-eval' 'unsafe-inline' 'self' img-src: 'self'"
+      "csp": null
     }
   }
 }
