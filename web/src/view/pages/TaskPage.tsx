@@ -6,6 +6,7 @@ import { atom_channels } from '../../stores/tasks';
 const Container = styled.div`
     display: grid;
     grid-template-columns: 20vw 80vw;
+    background-color: aquamarine;
     min-height: 100vh;
 `;
 
@@ -14,6 +15,7 @@ const SidebarWrapper = styled.div`
 `;
 
 const MainContentWrapper = styled.div`
+    margin: 10px;
     padding: 10px;
     background-color: aquamarine;
     overflow: scroll;
@@ -71,7 +73,7 @@ const ListComponent = styled.div`
     flex-shrink: 0;
     padding: 10px;
     margin: 10px;
-    width: 30%;
+    width: 25%;
     background-color: #f5f5f5;
     border-radius: 5px;
 `;
@@ -94,6 +96,11 @@ const ModalContent = styled.div`
     background-color: #f5f5f5;
 `;
 
+enum ModalContentType {
+    AddTask,
+    EditTask,
+}
+
 const MainContent: VFC = () => {
     const channels = useRecoilValue(atom_channels);
     const tasks: Tasks = {
@@ -106,7 +113,16 @@ const MainContent: VFC = () => {
         ],
     };
     const [toggle, setToggle] = useState(false);
-    const modalOpen = () => setToggle(true);
+    const [modalContentType, setModalContentType] = useState<ModalContentType>(ModalContentType.AddTask);
+    const modalOpen = () => {
+        setModalContentType(ModalContentType.EditTask);
+        setToggle(true);
+    };
+
+    const modalTaskAddOpen = () => {
+        setModalContentType(ModalContentType.AddTask);
+        setToggle(true);
+    };
 
     return (
         <MainContentWrapper>
@@ -123,6 +139,8 @@ const MainContent: VFC = () => {
                         }}
                     >
                         modal content
+                        {modalContentType === ModalContentType.AddTask && <div>add task</div>}
+                        {modalContentType === ModalContentType.EditTask && <div>edit task</div>}
                     </ModalContent>
                 </ModalWindow>
             )}
@@ -138,6 +156,10 @@ const MainContent: VFC = () => {
                                         return <div onClick={modalOpen}>{task.name}</div>;
                                     })}
                             </div>
+                            <AddTaskDiv onClick={modalTaskAddOpen}>
+                                <div>Task を追加</div>
+                                <div>+</div>
+                            </AddTaskDiv>
                         </ListComponent>
                     );
                 })}
@@ -145,6 +167,13 @@ const MainContent: VFC = () => {
         </MainContentWrapper>
     );
 };
+
+const AddTaskDiv = styled.div`
+    margin-top: 10px;
+    border-top: 1px solid #151515;
+    display: flex;
+    justify-content: space-between;
+`;
 
 const TaskPage: VFC = () => {
     return (
