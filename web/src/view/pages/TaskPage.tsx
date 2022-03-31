@@ -1,6 +1,7 @@
 import styled from '@emotion/styled';
 import { ChangeEvent, useCallback, useEffect, useState, VFC } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { invoke } from '@tauri-apps/api/tauri'
 import { atom_channels, atom_tasks } from '../../stores/tasks';
 
 const Container = styled.div`
@@ -108,7 +109,8 @@ const TaskAddComponent: VFC<TaskAddComponentProps> = ({ list, channel: ch }) => 
     const channels = useRecoilValue(atom_channels);
     const [tasks, setTasks] = useRecoilState(atom_tasks);
     
-    const onclick = () => {
+    const onclick = async () => {
+        await invoke('write_report')
         alert(JSON.stringify(inputTask));
         setTasks({ ...tasks, tasks: [...tasks.tasks, inputTask] });
     };
