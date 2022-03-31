@@ -1,8 +1,7 @@
 import styled from '@emotion/styled';
-import { channel } from 'diagnostics_channel';
 import { ChangeEvent, useCallback, useEffect, useState, VFC } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
-import { atom_channels } from '../../stores/tasks';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { atom_channels, atom_tasks } from '../../stores/tasks';
 
 const Container = styled.div`
     display: grid;
@@ -62,16 +61,6 @@ const Sidebar: VFC = () => {
     );
 };
 
-interface Tasks {
-    lists: string[];
-    tasks: Task[];
-}
-
-interface Task {
-    name: string;
-    list: string;
-}
-
 const ListWrapper = styled.div`
     display: flex;
     margin: 10px;
@@ -110,17 +99,24 @@ enum ModalContentType {
 }
 
 interface TaskAddComponentProps {
-    list: String;
+    list: string;
+    channel: string;
 }
 
-const TaskAddComponent: VFC<TaskAddComponentProps> = ({ list }) => {
+const TaskAddComponent: VFC<TaskAddComponentProps> = ({ list, channel: ch }) => {
     const [inputTask, setInputTask] = useState({ name: '', list: list });
-
+    const channels = useRecoilValue(atom_channels);
+    const [tasks, setTasks] = useRecoilState(atom_tasks);
+    
     const onclick = () => {
         alert(JSON.stringify(inputTask));
+        setTasks({ ...tasks, tasks: [...tasks.tasks, inputTask] });
     };
     const setText = (e: ChangeEvent<HTMLInputElement>) => {
         setInputTask({ ...inputTask, name: e.target.value });
+    };
+    const setList = (e: ChangeEvent<HTMLSelectElement>) => {
+        setInputTask({ ...inputTask, list: e.target.value });
     };
     return (
         <div>
@@ -131,6 +127,13 @@ const TaskAddComponent: VFC<TaskAddComponentProps> = ({ list }) => {
             <div>
                 <input type="datetime-local" name="" id="" />
             </div>
+            <select name="task-list" id="task-list" value={inputTask.list} onChange={setList}>
+                {channels.channels
+                    .filter((channel) => channel.name === ch)[0]
+                    ?.lists.map((list) => {
+                        return <option key={list}>{list}</option>;
+                    })}
+            </select>
             <button onClick={onclick}>Add</button>
         </div>
     );
@@ -138,24 +141,19 @@ const TaskAddComponent: VFC<TaskAddComponentProps> = ({ list }) => {
 
 const MainContent: VFC = () => {
     const [channels, setChannels] = useRecoilState(atom_channels);
-    const tasks: Tasks = {
-        lists: ['list1', 'list2', 'list3', 'list4', 'list5'],
-        tasks: [
-            { name: 'task1', list: 'list1' },
-            { name: 'task2', list: 'list1' },
-            { name: 'task3', list: 'list2' },
-            { name: 'task4', list: 'list2' },
-        ],
-    };
+
+    const tasks = useRecoilValue(atom_tasks);
     const [toggle, setToggle] = useState(false);
+    const [select_list, setSelectList] = useState('');
     const [modalContentType, setModalContentType] = useState<ModalContentType>(ModalContentType.AddTask);
     const modalOpen = () => {
         setModalContentType(ModalContentType.EditTask);
         setToggle(true);
     };
 
-    const modalTaskAddOpen = () => {
+    const modalTaskAddOpen = (list_name: string) => {
         setModalContentType(ModalContentType.AddTask);
+        setSelectList(list_name);
         setToggle(true);
     };
 
@@ -180,7 +178,9 @@ const MainContent: VFC = () => {
                         }}
                     >
                         modal content
-                        {modalContentType === ModalContentType.AddTask && <TaskAddComponent list="list" />}
+                        {modalContentType === ModalContentType.AddTask && (
+                            <TaskAddComponent list={select_list} channel={channels.select} />
+                        )}
                         {modalContentType === ModalContentType.EditTask && <div>edit task</div>}
                     </ModalContent>
                 </ModalWindow>
@@ -202,7 +202,7 @@ const MainContent: VFC = () => {
                                                 return <div onClick={modalOpen}>{task.name}</div>;
                                             })}
                                     </div>
-                                    <AddTaskDiv onClick={modalTaskAddOpen}>
+                                    <AddTaskDiv onClick={() => modalTaskAddOpen(list)}>
                                         <div>Task を追加</div>
                                         <div>+</div>
                                     </AddTaskDiv>

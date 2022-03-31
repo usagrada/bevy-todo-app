@@ -96,31 +96,42 @@ fn main_content() -> Html {
 
 #[function_component(SideBar)]
 fn side_bar() -> Html {
-    let channels = use_context::<UseStateHandle<Channels>>().expect("no ctx found");
-    
-    let update_channel = Callback::from(move |channel: String| {
-        let chs = *channels.clone();
-        channels.set(Channels {
-            select: channel.to_string(),
-            channels: chs.channels,
-        });
-    });
+    let channels_handler = use_context::<UseStateHandle<Channels>>().expect("no ctx found");
+    let Channels {
+        channels,
+        select: _,
+    } = channels_handler.deref().clone();
+
+    let update_channel = {
+        let channels_handler = channels_handler.clone();
+        {
+            let chs = channels.clone();
+            Callback::from(move |new_channel: &str| {
+                channels_handler.set(Channels {
+                    select: new_channel.to_string(),
+                    channels: chs.clone(),
+                });
+            })
+        }
+    };
 
     html!(
         <div class="side-bar">
             <div>
                 {"sidebar"}
             </div>
-            // <StateExample />
             {
-                for channels.channels.clone().iter().map(|ch| {
-                    let channel = ch.clone();
-                    let onclick = Callback::from(move |_| {
-                        let channel = channel.clone();
-                        update_channel.clone().emit(String::from(channel));
-                    });
+                for channels.iter().map(|ch: &String| {
+                    let update_channel = update_channel.clone();
+                    let onclick = {
+                        // let ch = ch.clone();
+                        Callback::from(move |_| {
+                            update_channel.emit(&ch);
+                            // move |_| update_channel.emit(&ch);
+                        })
+                    };
                     html! {
-                        <div class="task" onclick={onclick}>
+                        <div class="task" onclick={onclick.clone()}>
                             {&ch}
                         </div>
                     }
@@ -132,13 +143,12 @@ fn side_bar() -> Html {
 
 #[function_component(StateExample)]
 fn state_example() -> Html {
-let name_handle = use_state(|| String::from("Bob"));
+    let name_handle = use_state(|| String::from("Bob"));
     let name = name_handle.deref().clone();
     let onclick = {
         let name = name.clone();
         Callback::from(move |_| name_handle.set(format!("{}y Jr.", name)))
     };
-
 
     html! {
         <div>
