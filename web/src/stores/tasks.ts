@@ -27,7 +27,7 @@ interface Tasks {
     tasks: Task[];
 }
 
-interface Task {
+export interface Task {
     name: string;
     list: string;
 }

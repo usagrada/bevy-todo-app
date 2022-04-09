@@ -105,13 +105,13 @@ fn side_bar() -> Html {
     let update_channel = {
         let channels_handler = channels_handler.clone();
         {
-            let chs = channels.clone();
-            Callback::from(move |new_channel: &str| {
-                channels_handler.set(Channels {
-                    select: new_channel.to_string(),
-                    channels: chs.clone(),
-                });
-            })
+            // let chs = channels.clone();
+            // Callback::from(move |new_channel: &str| {
+            //     channels_handler.set(Channels {
+            //         select: new_channel.to_string(),
+            //         channels: chs.clone(),
+            //     });
+            // })
         }
     };
 
@@ -122,13 +122,13 @@ fn side_bar() -> Html {
             </div>
             {
                 for channels.iter().map(|ch: &String| {
-                    let update_channel = update_channel.clone();
+                    // let update_channel = update_channel.clone();
                     let onclick = {
                         // let ch = ch.clone();
-                        Callback::from(move |_| {
-                            update_channel.emit(&ch);
-                            // move |_| update_channel.emit(&ch);
-                        })
+                        // Callback::from(move |_| {
+                        //     update_channel.emit(&ch);
+                        //     // move |_| update_channel.emit(&ch);
+                        // })
                     };
                     html! {
                         <div class="task" onclick={onclick.clone()}>

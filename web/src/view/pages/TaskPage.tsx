@@ -1,8 +1,8 @@
 import styled from '@emotion/styled';
-import { ChangeEvent, useCallback, useEffect, useState, VFC } from 'react';
+import { ChangeEvent, DragEventHandler, MouseEventHandler, useCallback, useEffect, useState, VFC } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-import { invoke } from '@tauri-apps/api/tauri'
-import { atom_channels, atom_tasks } from '../../stores/tasks';
+import { invoke } from '@tauri-apps/api/tauri';
+import { atom_channels, atom_tasks, Task } from '../../stores/tasks';
 
 const Container = styled.div`
     display: grid;
@@ -74,6 +74,10 @@ const ListComponent = styled.div`
     width: 25%;
     background-color: #f5f5f5;
     border-radius: 5px;
+
+    &:hover {
+        background-color: #7070f1;
+    }
 `;
 
 const ModalWindow = styled.div`
@@ -108,9 +112,9 @@ const TaskAddComponent: VFC<TaskAddComponentProps> = ({ list, channel: ch }) => 
     const [inputTask, setInputTask] = useState({ name: '', list: list });
     const channels = useRecoilValue(atom_channels);
     const [tasks, setTasks] = useRecoilState(atom_tasks);
-    
+
     const onclick = async () => {
-        await invoke('write_report')
+        await invoke('write_report');
         alert(JSON.stringify(inputTask));
         setTasks({ ...tasks, tasks: [...tasks.tasks, inputTask] });
     };
@@ -144,7 +148,7 @@ const TaskAddComponent: VFC<TaskAddComponentProps> = ({ list, channel: ch }) => 
 const MainContent: VFC = () => {
     const [channels, setChannels] = useRecoilState(atom_channels);
 
-    const tasks = useRecoilValue(atom_tasks);
+    const [tasks, setTasks] = useRecoilState(atom_tasks);
     const [toggle, setToggle] = useState(false);
     const [select_list, setSelectList] = useState('');
     const [modalContentType, setModalContentType] = useState<ModalContentType>(ModalContentType.AddTask);
@@ -164,6 +168,8 @@ const MainContent: VFC = () => {
             setChannels({ ...channels, select: channels.channels[0].name });
         }
     }, []);
+
+    const [draggingTask, setDragging] = useState<Task | null>(null);
 
     return (
         <MainContentWrapper>
@@ -192,8 +198,18 @@ const MainContent: VFC = () => {
                     {channels.channels
                         .find((ch) => ch.name == channels.select)
                         ?.lists.map((list) => {
+                            const dropTask: DragEventHandler<HTMLDivElement> = (e) => {
+                                console.log(e);
+                                console.log(draggingTask);
+                                let new_tasks = tasks.tasks.filter((task) => task !== draggingTask);
+                                if (draggingTask !== null) {
+                                    let new_task = { ...draggingTask, list: list };
+                                    new_tasks.push(new_task);
+                                }
+                                setTasks({ ...tasks, tasks: new_tasks });
+                            };
                             return (
-                                <ListComponent>
+                                <ListComponent onDrop={dropTask} onDragOver={(e) => e.preventDefault()}>
                                     <div>
                                         <b>{list}</b>
                                     </div>
@@ -201,7 +217,20 @@ const MainContent: VFC = () => {
                                         {tasks.tasks
                                             .filter((task) => task.list == list)
                                             .map((task) => {
-                                                return <div onClick={modalOpen}>{task.name}</div>;
+                                                const dragTask: DragEventHandler<HTMLDivElement> = (e) => {
+                                                    setDragging(task);
+                                                    console.log(e);
+                                                };
+                                                return (
+                                                    <div
+                                                        draggable
+                                                        onDragStart={dragTask}
+                                                        onClick={modalOpen}
+                                                        key={task.name}
+                                                    >
+                                                        {task.name}
+                                                    </div>
+                                                );
                                             })}
                                     </div>
                                     <AddTaskDiv onClick={() => modalTaskAddOpen(list)}>
