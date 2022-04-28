@@ -1,7 +1,8 @@
 import styled from '@emotion/styled';
-import { useCallback, useState, VFC } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
-import { atom_channels } from '../../stores/tasks';
+import { ChangeEvent, DragEventHandler, MouseEventHandler, useCallback, useEffect, useState, VFC } from 'react';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { invoke } from '@tauri-apps/api/tauri';
+import { atom_channels, atom_tasks, Task } from '../../stores/tasks';
 
 const Container = styled.div`
     display: grid;
@@ -18,7 +19,14 @@ const MainContentWrapper = styled.div`
     margin: 10px;
     padding: 10px;
     background-color: aquamarine;
-    overflow: scroll;
+    display: grid;
+    grid-template-rows: 60px 1fr;
+
+    & > .task-view {
+        /* background-color: aquamarine; */
+        height: 100%;
+        overflow: scroll;
+    }
 `;
 
 const ChannelList = styled.div`
@@ -54,16 +62,6 @@ const Sidebar: VFC = () => {
     );
 };
 
-interface Tasks {
-    lists: string[];
-    tasks: Task[];
-}
-
-interface Task {
-    name: string;
-    list: string;
-}
-
 const ListWrapper = styled.div`
     display: flex;
     margin: 10px;
@@ -76,6 +74,10 @@ const ListComponent = styled.div`
     width: 25%;
     background-color: #f5f5f5;
     border-radius: 5px;
+
+    &:hover {
+        background-color: #7070f1;
+    }
 `;
 
 const ModalWindow = styled.div`
@@ -101,28 +103,73 @@ enum ModalContentType {
     EditTask,
 }
 
-const MainContent: VFC = () => {
+interface TaskAddComponentProps {
+    list: string;
+    channel: string;
+}
+
+const TaskAddComponent: VFC<TaskAddComponentProps> = ({ list, channel: ch }) => {
+    const [inputTask, setInputTask] = useState({ name: '', list: list });
     const channels = useRecoilValue(atom_channels);
-    const tasks: Tasks = {
-        lists: ['list1', 'list2', 'list3', 'list4', 'list5'],
-        tasks: [
-            { name: 'task1', list: 'list1' },
-            { name: 'task2', list: 'list1' },
-            { name: 'task3', list: 'list2' },
-            { name: 'task4', list: 'list2' },
-        ],
+    const [tasks, setTasks] = useRecoilState(atom_tasks);
+
+    const onclick = async () => {
+        await invoke('write_report');
+        alert(JSON.stringify(inputTask));
+        setTasks({ ...tasks, tasks: [...tasks.tasks, inputTask] });
     };
+    const setText = (e: ChangeEvent<HTMLInputElement>) => {
+        setInputTask({ ...inputTask, name: e.target.value });
+    };
+    const setList = (e: ChangeEvent<HTMLSelectElement>) => {
+        setInputTask({ ...inputTask, list: e.target.value });
+    };
+    return (
+        <div>
+            <div>Add Task</div>
+            <div>
+                <input type="text" placeholder="task name" onChange={setText} />
+            </div>
+            <div>
+                <input type="datetime-local" name="" id="" />
+            </div>
+            <select name="task-list" id="task-list" value={inputTask.list} onChange={setList}>
+                {channels.channels
+                    .filter((channel) => channel.name === ch)[0]
+                    ?.lists.map((list) => {
+                        return <option key={list}>{list}</option>;
+                    })}
+            </select>
+            <button onClick={onclick}>Add</button>
+        </div>
+    );
+};
+
+const MainContent: VFC = () => {
+    const [channels, setChannels] = useRecoilState(atom_channels);
+
+    const [tasks, setTasks] = useRecoilState(atom_tasks);
     const [toggle, setToggle] = useState(false);
+    const [select_list, setSelectList] = useState('');
     const [modalContentType, setModalContentType] = useState<ModalContentType>(ModalContentType.AddTask);
     const modalOpen = () => {
         setModalContentType(ModalContentType.EditTask);
         setToggle(true);
     };
 
-    const modalTaskAddOpen = () => {
+    const modalTaskAddOpen = (list_name: string) => {
         setModalContentType(ModalContentType.AddTask);
+        setSelectList(list_name);
         setToggle(true);
     };
+
+    useEffect(() => {
+        if (!channels.select && channels.channels.length > 0) {
+            setChannels({ ...channels, select: channels.channels[0].name });
+        }
+    }, []);
+
+    const [draggingTask, setDragging] = useState<Task | null>(null);
 
     return (
         <MainContentWrapper>
@@ -139,37 +186,69 @@ const MainContent: VFC = () => {
                         }}
                     >
                         modal content
-                        {modalContentType === ModalContentType.AddTask && <div>add task</div>}
+                        {modalContentType === ModalContentType.AddTask && (
+                            <TaskAddComponent list={select_list} channel={channels.select} />
+                        )}
                         {modalContentType === ModalContentType.EditTask && <div>edit task</div>}
                     </ModalContent>
                 </ModalWindow>
             )}
-            <ListWrapper>
-                {tasks.lists.map((list) => {
-                    return (
-                        <ListComponent>
-                            <div>{list}</div>
-                            <div>
-                                {tasks.tasks
-                                    .filter((task) => task.list == list)
-                                    .map((task) => {
-                                        return <div onClick={modalOpen}>{task.name}</div>;
-                                    })}
-                            </div>
-                            <AddTaskDiv onClick={modalTaskAddOpen}>
-                                <div>Task を追加</div>
-                                <div>+</div>
-                            </AddTaskDiv>
-                        </ListComponent>
-                    );
-                })}
-            </ListWrapper>
+            <div className="task-view">
+                <ListWrapper>
+                    {channels.channels
+                        .find((ch) => ch.name == channels.select)
+                        ?.lists.map((list) => {
+                            const dropTask: DragEventHandler<HTMLDivElement> = (e) => {
+                                console.log(e);
+                                console.log(draggingTask);
+                                let new_tasks = tasks.tasks.filter((task) => task !== draggingTask);
+                                if (draggingTask !== null) {
+                                    let new_task = { ...draggingTask, list: list };
+                                    new_tasks.push(new_task);
+                                }
+                                setTasks({ ...tasks, tasks: new_tasks });
+                            };
+                            return (
+                                <ListComponent onDrop={dropTask} onDragOver={(e) => e.preventDefault()}>
+                                    <div>
+                                        <b>{list}</b>
+                                    </div>
+                                    <div>
+                                        {tasks.tasks
+                                            .filter((task) => task.list == list)
+                                            .map((task) => {
+                                                const dragTask: DragEventHandler<HTMLDivElement> = (e) => {
+                                                    setDragging(task);
+                                                    console.log(e);
+                                                };
+                                                return (
+                                                    <div
+                                                        draggable
+                                                        onDragStart={dragTask}
+                                                        onClick={modalOpen}
+                                                        key={task.name}
+                                                    >
+                                                        {task.name}
+                                                    </div>
+                                                );
+                                            })}
+                                    </div>
+                                    <AddTaskDiv onClick={() => modalTaskAddOpen(list)}>
+                                        <div>Task を追加</div>
+                                        <div>+</div>
+                                    </AddTaskDiv>
+                                </ListComponent>
+                            );
+                        })}
+                </ListWrapper>
+            </div>
         </MainContentWrapper>
     );
 };
 
 const AddTaskDiv = styled.div`
     margin-top: 10px;
+    padding: 5px;
     border-top: 1px solid #151515;
     display: flex;
     justify-content: space-between;
